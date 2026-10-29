@@ -1,0 +1,952 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Quest: Teks Prosedur Kelas 9 MTs</title>
+    <!-- Tailwind CSS for UI Overlay -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Pixel Art/Game style -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #1a202c;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #60a5fa, #bfdbfe);
+            image-rendering: pixelated;
+        }
+        /* Custom modal animation */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        /* Custom button press effects */
+        .btn-touch:active {
+            transform: scale(0.92);
+            filter: brightness(0.85);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-center items-center relative overflow-hidden bg-slate-900">
+
+    <!-- Game Container Canvas -->
+    <div id="game-wrapper" class="relative w-full h-full max-w-6xl max-h-[720px] aspect-video shadow-2xl overflow-hidden rounded-none md:rounded-2xl border-0 md:border-4 border-slate-700 bg-sky-300 flex flex-col">
+        
+        <!-- Top HUD Bar -->
+        <div class="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-3 md:p-4 bg-slate-900/80 backdrop-blur-md text-white border-b-2 border-amber-400">
+            <!-- Score & Progress -->
+            <div class="flex items-center space-x-4 md:space-x-8">
+                <div class="flex items-center space-x-2">
+                    <span class="text-amber-400 text-lg md:text-xl"><i class="fa-solid fa-coins"></i></span>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Skor</div>
+                        <div id="hud-score" class="text-sm md:text-lg font-pixel text-yellow-300">0</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-emerald-400 text-lg md:text-xl"><i class="fa-solid fa-door-open"></i></span>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Progres Gate</div>
+                        <div id="hud-progress" class="text-sm md:text-lg font-pixel text-emerald-300">0 / 10</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Title / Info -->
+            <div class="hidden sm:block text-right">
+                <span class="bg-amber-500 text-slate-900 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Teks Prosedur - Kelas 9
+                </span>
+            </div>
+        </div>
+
+        <!-- Canvas Game World -->
+        <canvas id="gameCanvas" class="w-full h-full"></canvas>
+
+        <!-- Touch Controls Overlay (Visible on Mobile/Tablet or can be used on desktop) -->
+        <div id="touch-controls" class="absolute bottom-3 left-3 right-3 z-20 flex justify-between items-end pointer-events-none md:hidden">
+            <!-- Left / Right D-Pad -->
+            <div class="flex space-x-2 pointer-events-auto">
+                <button id="btn-left" class="btn-touch w-14 h-14 bg-slate-800/80 active:bg-amber-500 text-white rounded-2xl flex items-center justify-center border-2 border-slate-600 text-2xl shadow-lg">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="btn-right" class="btn-touch w-14 h-14 bg-slate-800/80 active:bg-amber-500 text-white rounded-2xl flex items-center justify-center border-2 border-slate-600 text-2xl shadow-lg">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <!-- Jump Button -->
+            <div class="pointer-events-auto">
+                <button id="btn-jump" class="btn-touch w-16 h-16 bg-amber-500 active:bg-amber-600 text-slate-900 font-bold rounded-full flex items-center justify-center border-4 border-amber-300 text-2xl shadow-xl">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Modal Popup -->
+    <div id="quiz-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
+        <div class="bg-slate-900 border-4 border-amber-400 w-full max-w-xl rounded-3xl p-6 md:p-8 shadow-2xl text-white animate-pop relative overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-700 pb-4 mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-amber-500 text-slate-900 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" id="modal-q-num">
+                        1
+                    </div>
+                    <div>
+                        <h3 class="text-sm text-amber-400 font-bold tracking-wider uppercase">Tantangan Gerbang</h3>
+                        <p class="text-xs text-slate-400">Jawab pertanyaan untuk membuka rintangan</p>
+                    </div>
+                </div>
+                <div class="bg-slate-800 px-3 py-1 rounded-full text-xs font-semibold text-slate-300 border border-slate-700">
+                    Materi Teks Prosedur
+                </div>
+            </div>
+
+            <!-- Question Box -->
+            <div class="mb-6">
+                <p id="quiz-question" class="text-base md:text-lg font-semibold text-slate-100 leading-relaxed">
+                    Pertanyaan akan muncul di sini...
+                </p>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="quiz-options" class="grid grid-cols-1 gap-3 mb-4">
+                <!-- Option buttons dynamically generated -->
+            </div>
+
+            <!-- Alert Message Area -->
+            <div id="quiz-feedback" class="min-h-[40px] flex items-center justify-center text-center rounded-xl p-2 font-bold text-sm hidden transition-all">
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div id="victory-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md hidden p-4">
+        <div class="bg-slate-900 border-4 border-yellow-400 w-full max-w-lg rounded-3xl p-8 shadow-2xl text-center text-white animate-pop">
+            <div class="w-20 h-20 bg-yellow-400/20 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-yellow-400 text-4xl animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-pixel text-yellow-400 mb-2">SELAMAT!</h2>
+            <p class="text-slate-300 mb-6">Kamu berhasil menyelesaikan seluruh 10 rintangan Teks Prosedur Kelas 9 MTs!</p>
+
+            <div class="bg-slate-800/80 rounded-2xl p-4 mb-6 border border-slate-700 flex justify-around">
+                <div>
+                    <div class="text-xs text-slate-400">Total Skor</div>
+                    <div id="victory-score" class="text-2xl font-pixel text-amber-400">1000</div>
+                </div>
+                <div class="border-r border-slate-700"></div>
+                <div>
+                    <div class="text-xs text-slate-400">Gerbang Terbuka</div>
+                    <div class="text-2xl font-pixel text-emerald-400">10 / 10</div>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-extrabold rounded-2xl text-lg shadow-lg hover:shadow-amber-500/20 transition-all transform active:scale-95">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Main Lagi
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Script -->
+    <script>
+        // --- sound synthesizers using Web Audio API (No external assets required) ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playJump() {
+                this.init();
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playCorrect() {
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [300, 400, 500, 700];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.15);
+                });
+            }
+            playWrong() {
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.3);
+            }
+            playWin() {
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [261, 329, 392, 523, 659, 783];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.3);
+                });
+            }
+        }
+
+        const audio = new SoundFX();
+
+        // --- 10 Soal Teks Prosedur Kelas 9 MTs Data ---
+        const questionsData = [
+            {
+                q: "Apa tujuan utama dari teks prosedur?",
+                options: [
+                    "A. Menghibur pembaca dengan cerita seru",
+                    "B. Menjelaskan langkah-langkah membuat/melakukan sesuatu",
+                    "C. Menceritakan kejadian di masa lalu",
+                    "D. Menggambarkan tempat secara detail"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Struktur teks prosedur yang berisi tujuan akhir yang ingin dicapai disebut...",
+                options: [
+                    "A. Langkah-langkah",
+                    "B. Penutup",
+                    "C. Tujuan",
+                    "D. Material / Bahan"
+                ],
+                answer: 2 // C
+            },
+            {
+                q: "Kalimat yang memuat perintah dalam teks prosedur disebut kalimat...",
+                options: [
+                    "A. Deklaratif",
+                    "B. Imperatif",
+                    "C. Interogatif",
+                    "D. Persuasif"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Manakah contoh kalimat imperatif berikut ini?",
+                options: [
+                    "A. Apakah air sudah mendidih?",
+                    "B. Tuangkan 2 sendok gula ke dalam cangkir!",
+                    "C. Ibu sedang memasak di dapur.",
+                    "D. Mengapa kamu tidak makan?"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Kata-kata seperti 'pertama', 'kedua', 'kemudian', dan 'selanjutnya' dinamakan kata penghubung...",
+                options: [
+                    "A. Kausalitas",
+                    "B. Temporal / Urutan",
+                    "C. Syarat",
+                    "D. Perbandingan"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Bagian teks prosedur yang berisi alat dan bahan biasanya terdapat pada jenis prosedur...",
+                options: [
+                    "A. Cara menggunakan alat",
+                    "B. Cara melakukan aktivitas",
+                    "C. Cara membuat sesuatu",
+                    "D. Cara menyikapi sesuatu"
+                ],
+                answer: 2 // C
+            },
+            {
+                q: "Ciri bahasa teks prosedur yang menggunakan kata kerja aktif yang menyatakan tindakan adalah kata kerja...",
+                options: [
+                    "A. Pasif",
+                    "B. Material",
+                    "C. Mental",
+                    "D. Relasional"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "\"Aduk hingga merata dan sajikan selagi hangat.\" Kalimat tersebut biasanya terdapat pada bagian...",
+                options: [
+                    "A. Tujuan",
+                    "B. Alat dan Bahan",
+                    "C. Langkah-langkah",
+                    "D. Judul"
+                ],
+                answer: 2 // C
+            },
+            {
+                q: "Mengapa petunjuk dalam teks prosedur harus disusun secara urut/sistematis?",
+                options: [
+                    "A. Agar teks terlihat panjang",
+                    "B. Agar pembaca tidak bingung dan berhasil mencapai tujuan",
+                    "C. Agar bahasa terlihat indah",
+                    "D. Agar mudah dihafal"
+                ],
+                answer: 1 // B
+            },
+            {
+                q: "Teks prosedur yang terdiri atas banyak langkah dan sub-langkah yang rumit disebut teks prosedur...",
+                options: [
+                    "A. Sederhana",
+                    "B. Protokol",
+                    "C. Kompleks",
+                    "D. Singkat"
+                ],
+                answer: 2 // C
+            }
+        ];
+
+        // --- Game Setup Canvas & Variables ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fixed internal canvas dimensions for uniform game physics
+        const GAME_WIDTH = 960;
+        const GAME_HEIGHT = 540;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Game State Variables
+        let score = 0;
+        let completedGates = 0;
+        let isQuizActive = false;
+        let currentGateIndex = null;
+        let cameraX = 0;
+
+        // Inputs
+        const keys = { left: false, right: false, jump: false };
+
+        // Player Character Object (Super Mario Style Retro Guy)
+        const player = {
+            x: 80,
+            y: 300,
+            width: 32,
+            height: 48,
+            vx: 0,
+            vy: 0,
+            speed: 5.5,
+            jumpStrength: -13.5,
+            gravity: 0.65,
+            isGrounded: false,
+            facingRight: true,
+            frame: 0,
+            animTimer: 0
+        };
+
+        // World Level Elements (Platforms, Gates, Finish Flag)
+        let platforms = [];
+        let gates = [];
+        let particles = [];
+        let finishFlag = null;
+
+        // Initialize Level World
+        function initLevel() {
+            score = 0;
+            completedGates = 0;
+            cameraX = 0;
+            player.x = 80;
+            player.y = 300;
+            player.vx = 0;
+            player.vy = 0;
+
+            platforms = [];
+            gates = [];
+            particles = [];
+
+            const GROUND_Y = 460;
+            const BLOCK_SIZE = 40;
+
+            // Generate continuous terrain with gaps and platforming elements
+            let currentX = 0;
+
+            // Base starting floor
+            platforms.push({ x: 0, y: GROUND_Y, width: 600, height: 80, type: 'ground' });
+            currentX = 600;
+
+            // 10 Gate Segments Setup
+            for (let i = 0; i < 10; i++) {
+                // Gap / Pit
+                currentX += 80;
+
+                // Ground section with Gate
+                const segmentWidth = 600;
+                platforms.push({ x: currentX, y: GROUND_Y, width: segmentWidth, height: 80, type: 'ground' });
+
+                // Add raised floating platforms for fun Mario platforming
+                platforms.push({ x: currentX + 100, y: GROUND_Y - 100, width: 120, height: 28, type: 'block' });
+                platforms.push({ x: currentX + 350, y: GROUND_Y - 120, width: 120, height: 28, type: 'block' });
+
+                // Place Question Gate in middle of segment
+                const gateX = currentX + 280;
+                gates.push({
+                    id: i,
+                    x: gateX,
+                    y: GROUND_Y - 140,
+                    width: 40,
+                    height: 140,
+                    solved: false,
+                    questionData: questionsData[i]
+                });
+
+                currentX += segmentWidth;
+            }
+
+            // End Area with Finish Castle Flag
+            platforms.push({ x: currentX, y: GROUND_Y, width: 500, height: 80, type: 'ground' });
+            finishFlag = { x: currentX + 300, y: GROUND_Y - 200, width: 40, height: 200 };
+
+            updateHUD();
+        }
+
+        // --- Key & Touch Event Handling ---
+        window.addEventListener('keydown', (e) => {
+            if (isQuizActive) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+                keys.jump = true;
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.jump = false;
+        });
+
+        // Touch Control Listeners
+        const setupTouchBtn = (id, keyName) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            const startHandler = (e) => {
+                e.preventDefault();
+                keys[keyName] = true;
+            };
+            const endHandler = (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+            };
+            btn.addEventListener('touchstart', startHandler);
+            btn.addEventListener('touchend', endHandler);
+            btn.addEventListener('mousedown', startHandler);
+            btn.addEventListener('mouseup', endHandler);
+            btn.addEventListener('mouseleave', endHandler);
+        };
+
+        setupTouchBtn('btn-left', 'left');
+        setupTouchBtn('btn-right', 'right');
+        setupTouchBtn('btn-jump', 'jump');
+
+        // --- Main Game Loop ---
+        function update() {
+            if (isQuizActive) return;
+
+            // Horizontal Movement Physics
+            if (keys.left) {
+                player.vx = -player.speed;
+                player.facingRight = false;
+            } else if (keys.right) {
+                player.vx = player.speed;
+                player.facingRight = true;
+            } else {
+                player.vx *= 0.7; // friction
+            }
+
+            // Jump Physics
+            if (keys.jump && player.isGrounded) {
+                player.vy = player.jumpStrength;
+                player.isGrounded = false;
+                audio.playJump();
+            }
+
+            // Gravity
+            player.vy += player.gravity;
+
+            // Apply horizontal velocity
+            player.x += player.vx;
+            checkHorizontalCollisions();
+
+            // Apply vertical velocity
+            player.y += player.vy;
+            player.isGrounded = false;
+            checkVerticalCollisions();
+
+            // Check Gate Intersections
+            checkGateTriggers();
+
+            // Check Fall Off Map Reset
+            if (player.y > GAME_HEIGHT + 100) {
+                // Respawn back to nearest safe zone before active gate
+                respawnPlayer();
+            }
+
+            // Check Finish Line Victory
+            if (finishFlag && player.x >= finishFlag.x && completedGates === 10) {
+                triggerVictory();
+            }
+
+            // Camera Tracking
+            cameraX = player.x - GAME_WIDTH / 3;
+            if (cameraX < 0) cameraX = 0;
+
+            // Update particles
+            updateParticles();
+
+            // Animation Frame timer
+            if (Math.abs(player.vx) > 0.5 && player.isGrounded) {
+                player.animTimer++;
+                if (player.animTimer % 8 === 0) {
+                    player.frame = (player.frame + 1) % 4;
+                }
+            } else {
+                player.frame = 0;
+            }
+        }
+
+        function checkHorizontalCollisions() {
+            // Collision with platforms
+            platforms.forEach(p => {
+                if (
+                    player.x < p.x + p.width &&
+                    player.x + player.width > p.x &&
+                    player.y < p.y + p.height &&
+                    player.y + player.height > p.y
+                ) {
+                    if (player.vx > 0) player.x = p.x - player.width;
+                    else if (player.vx < 0) player.x = p.x + p.width;
+                }
+            });
+
+            // Collision with Active (Unsolved) Gates
+            gates.forEach(g => {
+                if (!g.solved) {
+                    if (
+                        player.x < g.x + g.width &&
+                        player.x + player.width > g.x &&
+                        player.y < g.y + g.height &&
+                        player.y + player.height > g.y
+                    ) {
+                        if (player.vx > 0) player.x = g.x - player.width;
+                        else if (player.vx < 0) player.x = g.x + g.width;
+                    }
+                }
+            });
+        }
+
+        function checkVerticalCollisions() {
+            platforms.forEach(p => {
+                if (
+                    player.x < p.x + p.width &&
+                    player.x + player.width > p.x &&
+                    player.y < p.y + p.height &&
+                    player.y + player.height > p.y
+                ) {
+                    if (player.vy > 0) { // Landing on top
+                        player.y = p.y - player.height;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                    } else if (player.vy < 0) { // Hitting underside
+                        player.y = p.y + p.height;
+                        player.vy = 0;
+                    }
+                }
+            });
+        }
+
+        function checkGateTriggers() {
+            gates.forEach(g => {
+                if (!g.solved) {
+                    // Trigger popup if player is touching or right in front of gate
+                    const distance = Math.abs((player.x + player.width / 2) - (g.x + g.width / 2));
+                    if (distance < 45 && Math.abs(player.y - g.y) < 100) {
+                        openQuizModal(g.id);
+                    }
+                }
+            });
+        }
+
+        function respawnPlayer() {
+            // Find last safe spot or start
+            let safeX = 80;
+            gates.forEach(g => {
+                if (g.solved && g.x < player.x) {
+                    safeX = Math.max(safeX, g.x + 80);
+                }
+            });
+            player.x = safeX;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
+        }
+
+        // --- Quiz Modal Logic ---
+        function openQuizModal(gateIndex) {
+            if (isQuizActive) return;
+            isQuizActive = true;
+            currentGateIndex = gateIndex;
+
+            const gate = gates[gateIndex];
+            const qData = gate.questionData;
+
+            document.getElementById('modal-q-num').innerText = gateIndex + 1;
+            document.getElementById('quiz-question').innerText = qData.q;
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            const feedbackEl = document.getElementById('quiz-feedback');
+            feedbackEl.classList.add('hidden');
+            feedbackEl.className = 'min-h-[40px] flex items-center justify-center text-center rounded-xl p-2 font-bold text-sm hidden transition-all';
+
+            qData.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 hover:border-amber-400 font-medium text-slate-200 transition-all active:scale-98 flex items-center justify-between";
+                btn.innerHTML = `<span>${optText}</span> <i class="fa-regular fa-circle text-slate-500"></i>`;
+                btn.onclick = () => submitAnswer(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('quiz-modal').classList.remove('hidden');
+        }
+
+        function submitAnswer(selectedIndex, btnElement) {
+            const gate = gates[currentGateIndex];
+            const qData = gate.questionData;
+            const feedbackEl = document.getElementById('quiz-feedback');
+
+            if (selectedIndex === qData.answer) {
+                // CORRECT ANSWER
+                audio.playCorrect();
+                btnElement.classList.remove('bg-slate-800', 'border-slate-700');
+                btnElement.classList.add('bg-emerald-600', 'border-emerald-400', 'text-white');
+
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Benar sekali! Gerbang terbuka!`;
+                feedbackEl.className = 'min-h-[40px] flex items-center justify-center text-center rounded-xl p-3 font-bold text-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pop';
+                feedbackEl.classList.remove('hidden');
+
+                // Update state
+                gate.solved = true;
+                score += 100;
+                completedGates++;
+                updateHUD();
+
+                // Particle explosion at gate
+                createGateParticles(gate.x + gate.width / 2, gate.y + gate.height / 2);
+
+                // Close Modal after brief delay
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').classList.add('hidden');
+                    isQuizActive = false;
+                }, 1200);
+
+            } else {
+                // WRONG ANSWER
+                audio.playWrong();
+                btnElement.classList.remove('bg-slate-800', 'border-slate-700');
+                btnElement.classList.add('bg-rose-600/30', 'border-rose-500', 'text-rose-200');
+
+                feedbackEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> Jawaban salah, coba lagi!`;
+                feedbackEl.className = 'min-h-[40px] flex items-center justify-center text-center rounded-xl p-3 font-bold text-sm bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pop';
+                feedbackEl.classList.remove('hidden');
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-progress').innerText = `${completedGates} / 10`;
+        }
+
+        function triggerVictory() {
+            audio.playWin();
+            document.getElementById('victory-score').innerText = score;
+            document.getElementById('victory-modal').classList.remove('hidden');
+            isQuizActive = true;
+        }
+
+        function restartGame() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            isQuizActive = false;
+            initLevel();
+        }
+
+        // --- Particles System for Gate Opening Effect ---
+        function createGateParticles(x, y) {
+            for (let i = 0; i < 25; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    size: Math.random() * 6 + 4,
+                    color: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899'][Math.floor(Math.random() * 4)],
+                    life: 30
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // --- Rendering Graphics ---
+        function render() {
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            ctx.save();
+            // Camera Translation offset
+            ctx.translate(-Math.floor(cameraX), 0);
+
+            // 1. Draw Background Clouds & Hills
+            drawBackground();
+
+            // 2. Draw Platforms (Ground and Blocks)
+            platforms.forEach(p => {
+                if (p.type === 'ground') {
+                    // Top grass layer
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(p.x, p.y, p.width, 14);
+                    // Dirt body
+                    ctx.fillStyle = '#854d0e';
+                    ctx.fillRect(p.x, p.y + 14, p.width, p.height - 14);
+                    // Pixel pattern on dirt
+                    ctx.fillStyle = '#713f12';
+                    for (let bx = p.x; bx < p.x + p.width; bx += 20) {
+                        ctx.fillRect(bx + 4, p.y + 24, 8, 8);
+                    }
+                } else {
+                    // Floating Brick Blocks
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(p.x, p.y, p.width, p.height);
+                    ctx.strokeStyle = '#78350f';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(p.x, p.y, p.width, p.height);
+                }
+            });
+
+            // 3. Draw Gates (Obstacles)
+            gates.forEach((g, idx) => {
+                if (!g.solved) {
+                    // Closed Gate / Barrier Pipe
+                    ctx.fillStyle = '#dc2626'; // Red barrier
+                    ctx.fillRect(g.x, g.y, g.width, g.height);
+
+                    // Border & Stripe
+                    ctx.strokeStyle = '#991b1b';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(g.x, g.y, g.width, g.height);
+
+                    // Lock Icon Box in Middle
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(g.x + 4, g.y + g.height / 2 - 20, 32, 40);
+
+                    // Lock symbol (Text or Canvas shape)
+                    ctx.fillStyle = '#78350f';
+                    ctx.font = 'bold 16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔒', g.x + g.width / 2, g.y + g.height / 2 + 2);
+
+                    // Question Tag Banner
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(g.x - 10, g.y - 30, g.width + 20, 24);
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillText(`Soal #${idx + 1}`, g.x + g.width / 2, g.y - 14);
+                } else {
+                    // Solved Opened Gate Base
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+                    ctx.fillRect(g.x, g.y, g.width, g.height);
+                    ctx.strokeStyle = '#22c55e';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeRect(g.x, g.y, g.width, g.height);
+                    ctx.setLineDash([]);
+                }
+            });
+
+            // 4. Draw Finish Castle / Flag
+            if (finishFlag) {
+                // Pole
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(finishFlag.x, finishFlag.y, 8, finishFlag.height);
+                // Gold ball top
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(finishFlag.x + 4, finishFlag.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                // Flag
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.moveTo(finishFlag.x + 8, finishFlag.y + 10);
+                ctx.lineTo(finishFlag.x + 60, finishFlag.y + 30);
+                ctx.lineTo(finishFlag.x + 8, finishFlag.y + 50);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 5. Draw Player Character (Super Mario style retro avatar)
+            drawPlayer();
+
+            // 6. Draw Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            // Flip horizontally if facing left
+            if (!player.facingRight) {
+                ctx.translate(player.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            // Mario Red Cap
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(4, 0, 24, 10);
+            ctx.fillRect(8, 2, 22, 6);
+
+            // Face / Skin
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(6, 10, 20, 12);
+
+            // Eyes & Mustache
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(18, 12, 4, 4); // Eye
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(12, 16, 14, 4); // Mustache
+
+            // Blue Overalls / Body
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(6, 22, 20, 16);
+
+            // Red Shirt Arms
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(2, 22, 6, 12);
+
+            // Animated Legs
+            ctx.fillStyle = '#1e3a8a';
+            if (player.frame % 2 === 0 || !player.isGrounded) {
+                ctx.fillRect(6, 38, 8, 10);
+                ctx.fillRect(18, 38, 8, 10);
+            } else {
+                ctx.fillRect(4, 38, 10, 8);
+                ctx.fillRect(18, 36, 10, 10);
+            }
+
+            ctx.restore();
+        }
+
+        function drawBackground() {
+            // Parallax Clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            const cloudOffset = cameraX * 0.2;
+            for (let i = 0; i < 20; i++) {
+                const cx = (i * 350) - cloudOffset;
+                ctx.beginPath();
+                ctx.arc(cx, 80 + (i % 3) * 20, 30, 0, Math.PI * 2);
+                ctx.arc(cx + 25, 70 + (i % 3) * 20, 35, 0, Math.PI * 2);
+                ctx.arc(cx + 50, 80 + (i % 3) * 20, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Parallax Distance Hills
+            ctx.fillStyle = '#93c5fd';
+            const hillOffset = cameraX * 0.4;
+            for (let i = 0; i < 15; i++) {
+                const hx = (i * 500) - hillOffset;
+                ctx.beginPath();
+                ctx.moveTo(hx, 460);
+                ctx.lineTo(hx + 150, 320);
+                ctx.lineTo(hx + 300, 460);
+                ctx.fill();
+            }
+        }
+
+        // Loop Runner
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize and Start Game on Window Load
+        window.onload = function () {
+            initLevel();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
+```
